@@ -2,8 +2,8 @@
 
 Source code and dataset for [ACL 2018](http://acl2018.org) paper: [Document Dating using Graph Convolution Networks](http://malllabiisc.github.io/publications/papers/neuraldater_acl18.pdf).
 
-<img src="https://raw.githubusercontent.com/malllabiisc/NeuralDater/master/overview.png" alt="https://raw.githubusercontent.com/malllabiisc/NeuralDater/master/overview.png">
-
+![](https://raw.githubusercontent.com/malllabiisc/NeuralDater/master/overview.png)
+*Overview of NeuralDater (proposed method). NeuralDater exploits syntactic and temporal structure in a document to learn effective representation, which in turn are used to predict the document time. NeuralDater uses a Bi-directional LSTM (Bi-LSTM), two Graph Convolution Networks (GCN) – one over the dependency tree and the other over the document’s temporal graph – along with a softmax classifier, all trained end-to-end jointly. Please refer paper for more details.*
 ### Dependencies
 
 * Compatible with TensorFlow 1.x and Python 3.x.
