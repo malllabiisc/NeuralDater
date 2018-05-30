@@ -20,8 +20,8 @@ Source code and dataset for [ACL 2018](http://acl2018.org) paper: [Document Dati
 
 * After installing python dependencies from `requirements.txt`, execute `sh setup.sh` for downloading GloVe embeddings.
 
-* `neural_dater.py` contains the TensorFlow (1.x) implementation of the Neural dater. To start training run: 
-
+* `neural_dater.py` contains TensorFlow (1.x) based implementation of the NeuralDater (proposed method). 
+* To start training: 
   ```shell
   python neural_dater.py -data data/nyt_processed_data.pkl -class 10 -name test_run
   ```
