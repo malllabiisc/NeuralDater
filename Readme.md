@@ -13,7 +13,7 @@ Source code and dataset for [ACL 2018](http://acl2018.org) paper: [Document Dati
 ### Dataset:
 
 * Download processed version of [NYT](https://drive.google.com/file/d/1wqQRFeA1ESAOJqrwUNakfa77n_S9cmBi/view?usp=sharing) and [APW](https://drive.google.com/open?id=1tll04ZBooB3Mohm6It-v8MBcjMCC3Y1w) section of  [Gigaword Corpus, 5th ed](https://catalog.ldc.upenn.edu/ldc2011t07).
-* After downloading, unzip the `.pkl` file in `data` directory.
+* Unzip the `.pkl` file in `data` directory.
 
 ### Usage:
 
