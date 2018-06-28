@@ -29,5 +29,3 @@ Source code and dataset for [ACL 2018](http://acl2018.org) paper: [Document Dati
   * `-class` denotes the number of classes in datasets,  `10` for NYT and `16` for APW.
   * `-name` is arbitrary name for the run.
 
-* We recommend to use tab size `8` for viewing `*.py` files.
-
