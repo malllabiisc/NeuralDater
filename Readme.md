@@ -34,7 +34,7 @@ Source code and dataset for [ACL 2018](http://acl2018.org) paper: [Document Dati
 
 ```tex
 @InProceedings{P18-1149,
-  author = "Vashishth, Shikhar	and Dasgupta, Shib Sankar	and Ray, Swayambhu Nath	and Talukdar, Partha",
+  author = "Vashishth, Shikhar and Dasgupta, Shib Sankar and Ray, Swayambhu Nath and Talukdar, Partha",
   title = "Dating Documents using Graph Convolution Networks",
   booktitle = "Proceedings of the 56th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)",
   year = "2018",
