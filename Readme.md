@@ -16,6 +16,34 @@ Source code and dataset for [ACL 2018](http://acl2018.org) paper: [Document Dati
 * Unzip the `.pkl` file in `data` directory.
 * Documents are originally taken from NYT and APW section of [Gigaword Corpus, 5th ed](https://catalog.ldc.upenn.edu/ldc2011t07).
 
+#### Preprocessing:
+
+For getting temporal graph of new documents. The following steps needs to be followed:
+
+- Setup [CAEVO](https://github.com/nchambers/caevo) and [CATENA](https://github.com/paramitamirza/CATENA) as explained in their respective repositories.
+
+- For extracting event and time mentions of a document
+
+  - `./runcaevoraw.sh <path_of_document>`
+  - Above command generates an `.xml` file. This is used by CATENA for extracting temporal graph and it also contains the dependency parse information of the document. 
+
+- `.xml` generated above is given as input to CATENA for getting the temporal graph of the document. 
+
+  - ```shell
+    java -Xmx6G -jar ./target/CATENA-1.0.3.jar -i <path_to_xml> \
+    	--tlinks ./data/TempEval3.TLINK.txt \
+    	--clinks ./data/Causal-TimeBank.CLINK.txt \
+    	-l ./models/CoNLL2009-ST-English-ALL.anna-3.3.lemmatizer.model \
+    	-g ./models/CoNLL2009-ST-English-ALL.anna-3.3.postagger.model \
+    	-p ./models/CoNLL2009-ST-English-ALL.anna-3.3.parser.model \
+    	-x ./tools/TextPro2.0/ -d ./models/catena-event-dct.model \
+    	-t ./models/catena-event-timex.model \
+    	-e ./models/catena-event-event.model 
+    	-c ./models/catena-causal-event-event.model > <destination_path>
+    ```
+
+  - The above command outputs the list of links in the temporal graph which are given as input to NeuralDater. 
+
 ### Usage:
 
 * After installing python dependencies from `requirements.txt`, execute `sh setup.sh` for downloading GloVe embeddings.
