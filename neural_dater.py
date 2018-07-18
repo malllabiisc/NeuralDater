@@ -11,8 +11,15 @@ from collections import defaultdict as ddict
 from pymongo import MongoClient
 from sklearn.metrics import precision_recall_fscore_support
 
+"""
+Abbreviations used in variables:
+	et: event-time
+	de: dependency parse
+"""
+
 class DCT_NN(Model):
 
+	# Pads the data in a batch
 	def padData(self, data, seq_len):
 		temp = np.zeros((len(data), seq_len), np.int32)
 		mask = np.zeros((len(data), seq_len), np.float32)
@@ -23,6 +30,7 @@ class DCT_NN(Model):
 
 		return temp, mask
 
+	# Generates the one-hot representation
 	def getOneHot(self, data, num_class):
 		temp = np.zeros((len(data), num_class), np.int32)
 		for i, ele in enumerate(data):
@@ -85,6 +93,7 @@ class DCT_NN(Model):
 					
 		return rm_idx
 
+	# Loads the data and arranges data for feeding to TensorFlow
 	def load_data(self):
 		data = pickle.load(open(self.p.dataset, 'rb'))
 
@@ -175,24 +184,26 @@ class DCT_NN(Model):
 
 
 	def add_placeholders(self):
-		self.input_x  		= tf.placeholder(tf.int32,   shape=[None, None],   name='input_data')
-		self.input_y 		= tf.placeholder(tf.int32,   shape=[None, None],   name='input_labels')
+		self.input_x  		= tf.placeholder(tf.int32,   shape=[None, None],   name='input_data')		# Words in a document (batch_size x max_words)
+		self.input_y 		= tf.placeholder(tf.int32,   shape=[None, None],   name='input_labels')		# Actual document creation year of the document
 
-		self.x_len		= tf.placeholder(tf.int32,   shape=[None],       name='input_len')
-		self.et_idx 		= tf.placeholder(tf.int32,   shape=[None, None],    name='et_idx')
-		self.et_mask 		= tf.placeholder(tf.float32, shape=[None, None],    name='et_mask')
+		self.x_len		= tf.placeholder(tf.int32,   shape=[None],         name='input_len')		# Number of words in each document in a batch
+		self.et_idx 		= tf.placeholder(tf.int32,   shape=[None, None],   name='et_idx')		# Index of tokens which are events/time_expressions
+		self.et_mask 		= tf.placeholder(tf.float32, shape=[None, None],   name='et_mask')
 
-		self.et_adj_mat_in	= [dict([(lbl, tf.sparse_placeholder(tf.float32,  shape=[None, None],  name='et_adj_mat_in_{}'. format(lbl))) for lbl in range(self.num_etLabel)]) for _ in range(self.p.batch_size)] 
-		self.et_adj_mat_out 	= [dict([(lbl, tf.sparse_placeholder(tf.float32,  shape=[None, None],  name='et_adj_mat_out_{}'.format(lbl))) for lbl in range(self.num_etLabel)]) for _ in range(self.p.batch_size)] 
+		# Array of batch_size number of dictionaries, where each dictionary is mapping of label to sparse_placeholder [Temporal graph]
+		self.de_adj_mat_in	= [{lbl: tf.sparse_placeholder(tf.float32,  shape=[None, None],  name='de_adj_mat_in_{}'.  format(lbl))} for lbl in range(self.num_deLabel) for _ in range(self.p.batch_size)]
+		self.de_adj_mat_out	= [{lbl: tf.sparse_placeholder(tf.float32,  shape=[None, None],  name='de_adj_mat_out_{}'. format(lbl))} for lbl in range(self.num_deLabel) for _ in range(self.p.batch_size)]
 
-		self.de_adj_mat_in	= [dict([(lbl, tf.sparse_placeholder(tf.float32,  shape=[None, None],  name='de_adj_mat_in_{}'. format(lbl))) for lbl in range(self.num_deLabel)]) for _ in range(self.p.batch_size)]
-		self.de_adj_mat_out 	= [dict([(lbl, tf.sparse_placeholder(tf.float32,  shape=[None, None],  name='de_adj_mat_out_{}'.format(lbl))) for lbl in range(self.num_deLabel)]) for _ in range(self.p.batch_size)]
+		# Array of batch_size number of dictionaries, where each dictionary is mapping of label to sparse_placeholder [Syntactic graph]
+		self.et_adj_mat_in	= [{lbl: tf.sparse_placeholder(tf.float32,  shape=[None, None],  name='et_adj_mat_in_{}'.  format(lbl))} for lbl in range(self.num_etLabel) for _ in range(self.p.batch_size)]
+		self.et_adj_mat_out	= [{lbl: tf.sparse_placeholder(tf.float32,  shape=[None, None],  name='et_adj_mat_out_{}'. format(lbl))} for lbl in range(self.num_etLabel) for _ in range(self.p.batch_size)]
 
-		self.seq_len 		= tf.placeholder(tf.int32, shape=(), name='seq_len')
-		self.max_et 		= tf.placeholder(tf.int32, shape=(), name='max_et')
+		self.seq_len 		= tf.placeholder(tf.int32, shape=(), name='seq_len')				# Maximum number of words in documents of a batch
+		self.max_et 		= tf.placeholder(tf.int32, shape=(), name='max_et')				# Maximum number of events/time_expressions in documents of a batch
 
-		self.dropout 		= tf.placeholder_with_default(self.p.dropout, 	  shape=(), name='dropout')
-		self.rec_dropout 	= tf.placeholder_with_default(self.p.rec_dropout, shape=(), name='rec_dropout')
+		self.dropout 		= tf.placeholder_with_default(self.p.dropout, 	  shape=(), name='dropout')	# Dropout used in GCN Layer
+		self.rec_dropout 	= tf.placeholder_with_default(self.p.rec_dropout, shape=(), name='rec_dropout')	# Dropout used in Bi-LSTM
 
 	def pad_dynamic(self, X, et_idx):
 		seq_len, max_et = 0, 0
@@ -268,7 +279,7 @@ class DCT_NN(Model):
 		out.append(gcn_in)
 
 		for layer in range(num_layers):
-			gcn_in    = out[-1]
+			gcn_in    = out[-1]						# out contains the output of all the GCN layers, intitally contains input to first GCN Layer
 			if len(out) > 1: in_dim = gcn_dim 				# After first iteration the in_dim = gcn_dim
 
 			with tf.name_scope('%s-%d' % (name,layer)):
@@ -340,6 +351,7 @@ class DCT_NN(Model):
 
 		return out
 
+	# Lookup equivalent for tensors with dim > 2 
 	def gather(self, data, pl_idx, pl_mask, max_len, name=None):
 		with tf.name_scope(name):
 			idx1  = tf.range(self.p.batch_size, dtype=tf.int32)
@@ -352,6 +364,7 @@ class DCT_NN(Model):
 			mask_vec = tf.expand_dims(pl_mask, axis=2)
 			return et_vecs * mask_vec
 
+	# Creates the compuational graph
 	def add_model(self):
 		nn_in = self.input_x
 
@@ -437,11 +450,11 @@ class DCT_NN(Model):
 		
 		nn_out = self.add_model()
 
-		self.loss      	= self.add_loss(nn_out)
-		self.train_op  	= self.add_optimizer(self.loss)
+		self.loss      	= self.add_loss(nn_out)				# Compute the loss
+		self.train_op  	= self.add_optimizer(self.loss)			# Update the parameters
 		self.logits 	= tf.nn.softmax(nn_out)
 
-		y_pred 	  = tf.argmax(self.logits, 1)
+		y_pred 	  = tf.argmax(self.logits, 1)				# Predictions by the model
 		corr_pred = tf.equal(tf.argmax(self.input_y, 1), y_pred)
 		self.corr_pred = tf.reduce_sum(tf.cast(corr_pred, 'int32'))
 

@@ -25,11 +25,22 @@ For getting temporal graph of new documents. The following steps needs to be fol
 - For extracting event and time mentions of a document
 
   - `./runcaevoraw.sh <path_of_document>`
-  - Above command generates an `.xml` file. This is used by CATENA for extracting temporal graph and it also contains the dependency parse information of the document. 
+
+  - Above command generates an `.xml` file. This is used by CATENA for extracting temporal graph and it also contains the dependency parse information of the document which can be extracted using the following command:
+
+    ```shell
+    python preprocess/read_caveo_out.py <caevo_out_path> <destination_path>
+    ```
+
+- For making the generated `.xml` file compatible for input to CATENA, use the following script as
+
+  ```shell
+  python preprocess/make_catena_input.py <caevo_out_path> <destination_path>
+  ```
 
 - `.xml` generated above is given as input to CATENA for getting the temporal graph of the document. 
 
-  - ```shell
+   ```shell
     java -Xmx6G -jar ./target/CATENA-1.0.3.jar -i <path_to_xml> \
     	--tlinks ./data/TempEval3.TLINK.txt \
     	--clinks ./data/Causal-TimeBank.CLINK.txt \
@@ -40,9 +51,15 @@ For getting temporal graph of new documents. The following steps needs to be fol
     	-t ./models/catena-event-timex.model \
     	-e ./models/catena-event-event.model 
     	-c ./models/catena-causal-event-event.model > <destination_path>
-    ```
+   ```
 
-  - The above command outputs the list of links in the temporal graph which are given as input to NeuralDater. 
+   The above command outputs the list of links in the temporal graph which are given as input to NeuralDater. The output file can be read using the following command:
+
+   ```shell
+   python preprocess/read_catena_out.py <catena_out_path> <destination_path>
+   ```
+
+    
 
 ### Usage:
 
