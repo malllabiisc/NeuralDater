@@ -1,18 +1,9 @@
 from models import *
 from helper import *
-from pprint import pprint
-import networkx as nx
-import scipy.sparse as sp
-import matplotlib.pyplot as plt, uuid, sys, os, time, argparse
-import pickle, pdb, operator, random, sys
 import tensorflow as tf
-import matplotlib.pyplot as plt
-from collections import defaultdict as ddict
-from pymongo import MongoClient
-from sklearn.metrics import precision_recall_fscore_support
 
 """
-Abbreviations used in variables:
+Abbreviations used in variable names:
 	et: event-time
 	de: dependency parse
 """
