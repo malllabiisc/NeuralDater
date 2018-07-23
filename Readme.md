@@ -18,7 +18,7 @@ Source code and dataset for [ACL 2018](http://acl2018.org) paper: [Document Dati
 
 #### Preprocessing:
 
-For getting temporal graph of new documents. The following steps needs to be followed:
+For getting temporal graph of new documents. The following steps need to be followed:
 
 - Setup [CAEVO](https://github.com/nchambers/caevo) and [CATENA](https://github.com/paramitamirza/CATENA) as explained in their respective repositories.
 
