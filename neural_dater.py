@@ -256,6 +256,7 @@ class DCT_NN(Model):
 
 		return feed_dict
 
+	# GCN Layer Implementation 
 	def GCNLayer(self, gcn_in, 		# Input to GCN Layer
 			   in_dim, 		# Dimension of input to GCN Layer 
 			   gcn_dim, 		# Hidden state dimension of GCN
