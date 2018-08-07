@@ -16,7 +16,7 @@ Source code and dataset for [ACL 2018](http://acl2018.org) paper: [Document Dati
 * Unzip the `.pkl` file in `data` directory.
 * Documents are originally taken from NYT and APW section of [Gigaword Corpus, 5th ed](https://catalog.ldc.upenn.edu/ldc2011t07).
 
-#### Preprocessing:
+### Preprocessing:
 
 For getting temporal graph of new documents. The following steps need to be followed:
 
@@ -65,7 +65,7 @@ For getting temporal graph of new documents. The following steps need to be foll
 
 * After installing python dependencies from `requirements.txt`, execute `sh setup.sh` for downloading GloVe embeddings.
 
-* `neural_dater.py` contains TensorFlow (1.x) based implementation of the NeuralDater (proposed method). 
+* `neural_dater.py` contains TensorFlow (1.x) based implementation of NeuralDater (proposed method). 
 * To start training: 
   ```shell
   python neural_dater.py -data data/nyt_processed_data.pkl -class 10 -name test_run
