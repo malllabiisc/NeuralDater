@@ -26,12 +26,12 @@ Source code and dataset for [ACL 2018](http://acl2018.org) paper: [Document Dati
       "et2id":    {"NONE":0, "INCLUDES": 1, "BEFORE":2, "IS_INCLUDED":3 ...},
       "de2id":	{"subj":0, "obj":1, "conj":3 ...},
       "train":    {
-        "X":	[[s1_w1, s1_w2, ...], [s2_w1, s2_w2, ...], ...],
-        "Y":	[s1_time_stamp, s2_time_stamp, s3_time_stamp, ...],
+        "X":        [[s1_w1, s1_w2, ...], [s2_w1, s2_w2, ...], ...],
+        "Y":        [s1_time_stamp, s2_time_stamp, s3_time_stamp, ...],
         "DepEdges": [[s1_dep_edges], [s2_dep_edges] ...],
-        "ETEdges":	[[s1_et_edges], [s2_et_edges], ...],
-        "ETIdx":	[[s1_et1, s1_et2, ...], [s2_et1, s2_et2, ...], ...],
-        "ET":	[[s1_et1_type, s1_et2_type, ...], [s2_et1_type, s2_et2_type, ...], ...],
+        "ETEdges":  [[s1_et_edges], [s2_et_edges], ...],
+        "ETIdx":    [[s1_et1, s1_et2, ...], [s2_et1, s2_et2, ...], ...],
+        "ET":       [[s1_et1_type, s1_et2_type, ...], [s2_et1_type, s2_et2_type, ...], ...],
       }
       "test": {same as "train"},
       "valid": {same as "train"}
