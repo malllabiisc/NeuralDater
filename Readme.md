@@ -13,8 +13,41 @@ Source code and dataset for [ACL 2018](http://acl2018.org) paper: [Document Dati
 ### Dataset:
 
 * Download the processed version (includes dependency and temporal graphs of each document) of [NYT](https://drive.google.com/open?id=1LcVaaffnW2ivnRTAVDiioYNXGtfSKvRy) and [APW](https://drive.google.com/open?id=1V0eUJTOA3f3AhLIenubDcmcGs6bB0EA7) datasets.
+
 * Unzip the `.pkl` file in `data` directory.
+
 * Documents are originally taken from NYT and APW section of [Gigaword Corpus, 5th ed](https://catalog.ldc.upenn.edu/ldc2011t07).
+
+* The structure of the processed input data is as follows.
+
+  ```java
+  {
+      "voc2id":   {"w1": 0, "w2": 1, ...},
+      "et2id":    {"NONE":0, "INCLUDES": 1, "BEFORE":2, "IS_INCLUDED":3 ...},
+  	"de2id":	{"subj":0, "obj":1, "conj":3 ...},
+  	"train":    {
+          "X":	[[s1_w1, s1_w2, ...], [s2_w1, s2_w2, ...], ...],
+  		"Y":	[s1_time_stamp, s2_time_stamp, s3_time_stamp, ...],
+  		"DepEdges": [[s1_dep_edges], [s2_dep_edges] ...],
+  		"ETEdges":	[[s1_et_edges], [s2_et_edges], ...],
+          "ETIdx":	[[s1_et1, s1_et2, ...], [s2_et1, s2_et2, ...], ...],
+          "ET":	[[s1_et1_type, s1_et2_type, ...], [s2_et1_type, s2_et2_type, ...], ...],
+      }
+      "test": {same as "train"},
+      "valid": {same as "train"}
+  }
+  ```
+
+    * `voc2id` is the mapping of words to their unique identifier
+    * `et2id` is the maping of temporal graph edge types to their unique identifier.
+    * `de2id` is the mapping of dependency graph edges types to their unique identifier.
+    * Each entry of `train`, `test` and `valid` is a bag of sentences, where
+      * `X` denotes the list sentences as the list of list of word indices.
+      * `Y` is the time stamp associated with each sentence.
+      * `DepEdges` is the edgelist of dependency parse for each sentence (required for S-GCN).
+      * `ETEdges` is the edgelist of temporal graph for each sentence (required for T-GCN).
+      * `ETIdx` is the position indices of *event/time_expression* in each sentence.
+      * `ET` is the type of each word in a sentence. `0` denotes normal word, `1` denotes *event* and `2` denotes *time expression*. 
 
 ### Preprocessing:
 
