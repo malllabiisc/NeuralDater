@@ -47,7 +47,7 @@ Source code and dataset for [ACL 2018](http://acl2018.org) paper: [Document Dati
       * `DepEdges` is the edgelist of dependency parse for each sentence (required for S-GCN).
       * `ETEdges` is the edgelist of temporal graph for each sentence (required for T-GCN).
       * `ETIdx` is the position indices of *event/time_expression* in each sentence.
-      * `ET` is the type of each word in a sentence. `0` denotes normal word, `1` denotes *event* and `2` denotes *time expression*. 
+      * `ET` is the type of each word in a sentence. `0` denotes normal word, `1` *event* and `2` *time expression*. 
 
 ### Preprocessing:
 
