@@ -109,6 +109,7 @@ For getting temporal graph of new documents. The following steps need to be foll
 
 
 ### Citing:
+Please cite the following paper if you use this code in your work.
 
 ```tex
 @InProceedings{neuraldater2018,
