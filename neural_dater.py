@@ -1,4 +1,3 @@
-from models import *
 from helper import *
 import tensorflow as tf
 
@@ -8,7 +7,7 @@ Abbreviations used in variable names:
 	de: dependency parse
 """
 
-class DCT_NN(Model):
+class DCT_NN(object):
 
 	# Pads the data in a batch
 	def padData(self, data, seq_len):
@@ -145,33 +144,21 @@ class DCT_NN(Model):
 
 	# Loads adjacency matrix in sparse matrix format, required for feeding to Tensorflow
 	def get_adj(self, edgeList, batch_size, max_nodes, max_labels):
-		adj_main_in, adj_main_out = [], []
-
+		adj_main = []
 		for edges in edgeList:
-			adj_in, adj_out = {}, {}
-
-			in_ind, in_data   = ddict(list), ddict(list)
-			out_ind, out_data = ddict(list), ddict(list)
+			ind, vals, adj   = ddict(list), ddict(list), {}
 
 			for src, dest, lbl in edges:
-				out_ind [lbl].append((src, dest))
-				out_data[lbl].append(1.0)
-
-				in_ind  [lbl].append((dest, src))
-				in_data [lbl].append(1.0)
+				ind [lbl].append((dest, src))
+				vals[lbl].append(1.0)
 
 			for lbl in range(max_labels):
-				if lbl not in out_ind and lbl not in in_ind:
-					adj_in [lbl] = sp.coo_matrix((max_nodes, max_nodes))
-					adj_out[lbl] = sp.coo_matrix((max_nodes, max_nodes))
-				else:
-					adj_in [lbl] = sp.coo_matrix((in_data[lbl],  zip(*in_ind[lbl])),  shape=(max_nodes, max_nodes))
-					adj_out[lbl] = sp.coo_matrix((out_data[lbl], zip(*out_ind[lbl])), shape=(max_nodes, max_nodes))
+				if lbl not in ind: 	adj[lbl] = sp.coo_matrix((max_nodes, max_nodes))
+				else: 			adj[lbl] = sp.coo_matrix((vals[lbl],  zip(*ind[lbl])),  shape=(max_nodes, max_nodes))
 
-			adj_main_in.append(adj_in)
-			adj_main_out.append(adj_out)
+			adj_main.append(adj)
 
-		return adj_main_in, adj_main_out
+		return adj_main
 
 
 	def add_placeholders(self):
@@ -183,12 +170,9 @@ class DCT_NN(Model):
 		self.et_mask 		= tf.placeholder(tf.float32, shape=[None, None],   name='et_mask')
 
 		# Array of batch_size number of dictionaries, where each dictionary is mapping of label to sparse_placeholder [Temporal graph]
-		self.de_adj_mat_in	= [{lbl: tf.sparse_placeholder(tf.float32,  shape=[None, None],  name='de_adj_mat_in_{}'.  format(lbl))} for lbl in range(self.num_deLabel) for _ in range(self.p.batch_size)]
-		self.de_adj_mat_out	= [{lbl: tf.sparse_placeholder(tf.float32,  shape=[None, None],  name='de_adj_mat_out_{}'. format(lbl))} for lbl in range(self.num_deLabel) for _ in range(self.p.batch_size)]
-
+		self.de_adj_mat	= [{lbl: tf.sparse_placeholder(tf.float32,  shape=[None, None],  name='de_adj_mat_{}'.  format(lbl))} for lbl in range(self.num_deLabel) for _ in range(self.p.batch_size)]
 		# Array of batch_size number of dictionaries, where each dictionary is mapping of label to sparse_placeholder [Syntactic graph]
-		self.et_adj_mat_in	= [{lbl: tf.sparse_placeholder(tf.float32,  shape=[None, None],  name='et_adj_mat_in_{}'.  format(lbl))} for lbl in range(self.num_etLabel) for _ in range(self.p.batch_size)]
-		self.et_adj_mat_out	= [{lbl: tf.sparse_placeholder(tf.float32,  shape=[None, None],  name='et_adj_mat_out_{}'. format(lbl))} for lbl in range(self.num_etLabel) for _ in range(self.p.batch_size)]
+		self.et_adj_mat	= [{lbl: tf.sparse_placeholder(tf.float32,  shape=[None, None],  name='et_adj_mat_{}'.  format(lbl))} for lbl in range(self.num_etLabel) for _ in range(self.p.batch_size)]
 
 		self.seq_len 		= tf.placeholder(tf.int32, shape=(), name='seq_len')				# Maximum number of words in documents of a batch
 		self.max_et 		= tf.placeholder(tf.int32, shape=(), name='max_et')				# Maximum number of events/time_expressions in documents of a batch
@@ -228,28 +212,19 @@ class DCT_NN(Model):
 		feed_dict[self.seq_len]			= seq_len
 		feed_dict[self.max_et]			= max_et
 
-		et_adj_in, et_adj_out = self.get_adj(ETEdges,  self.p.batch_size, max_et+1,  self.num_etLabel)  # max_et + 1(DCT)
-		de_adj_in, de_adj_out = self.get_adj(DepEdges, self.p.batch_size, seq_len, self.num_deLabel)
+		et_adj = self.get_adj(ETEdges,  self.p.batch_size, max_et+1,  self.num_etLabel)  # max_et + 1(DCT)
+		de_adj = self.get_adj(DepEdges, self.p.batch_size, seq_len, self.num_deLabel)
 
 		for i in range(self.p.batch_size):
 			for lbl in range(self.num_etLabel):
-				feed_dict[self.et_adj_mat_in[i][lbl]] = tf.SparseTensorValue( 	indices 	= np.array([et_adj_in[i][lbl].row, et_adj_in[i][lbl].col]).T,
-											      	values  	= et_adj_in[i][lbl].data,
-												dense_shape	= et_adj_in[i][lbl].shape)
-
-				feed_dict[self.et_adj_mat_out[i][lbl]] = tf.SparseTensorValue(  indices 	= np.array([et_adj_out[i][lbl].row, et_adj_out[i][lbl].col]).T,
-				    								values  	= et_adj_out[i][lbl].data,
-		 										dense_shape	= et_adj_out[i][lbl].shape)
+				feed_dict[self.et_adj_mat[i][lbl]] = tf.SparseTensorValue( 	indices 	= np.array([et_adj[i][lbl].row, et_adj[i][lbl].col]).T,
+											      	values  	= et_adj[i][lbl].data,
+												dense_shape	= et_adj[i][lbl].shape)
 
 			for lbl in range(self.num_deLabel):
-				feed_dict[self.de_adj_mat_in[i][lbl]] = tf.SparseTensorValue( 	indices 	= np.array([de_adj_in[i][lbl].row, de_adj_in[i][lbl].col]).T,
-											      	values  	= de_adj_in[i][lbl].data,
-												dense_shape	= de_adj_in[i][lbl].shape)
-
-				feed_dict[self.de_adj_mat_out[i][lbl]] = tf.SparseTensorValue(  indices 	= np.array([de_adj_out[i][lbl].row, de_adj_out[i][lbl].col]).T,
-				    								values  	= de_adj_out[i][lbl].data,
-		 										dense_shape	= de_adj_out[i][lbl].shape)
-		
+				feed_dict[self.de_adj_mat[i][lbl]] = tf.SparseTensorValue( 	indices 	= np.array([de_adj[i][lbl].row, de_adj[i][lbl].col]).T,
+											      	values  	= de_adj[i][lbl].data,
+												dense_shape	= de_adj[i][lbl].shape)
 		if dtype != 'train':
 			feed_dict[self.dropout]     = 1.0
 			feed_dict[self.rec_dropout] = 1.0
@@ -263,8 +238,7 @@ class DCT_NN(Model):
 			   batch_size, 		# Batch size
 			   max_nodes, 		# Maximum number of nodes in graph
 			   max_labels, 		# Maximum number of edge labels
-			   adj_in, 		# Adjacency matrix for in edges
-			   adj_out, 		# Adjacency matrix for out edges
+			   adj, 		# Adjacency matrix for in edges
 			   num_layers=1,	# Number of GCN Layers
 			   name="GCN"):
 		out = []
@@ -284,42 +258,40 @@ class DCT_NN(Model):
 
 						w_in   = tf.get_variable('w_in',   [in_dim, gcn_dim],  	initializer=tf.contrib.layers.xavier_initializer(), 	regularizer=self.regularizer)
 						b_in   = tf.get_variable('b_in',   [1, gcn_dim],   	initializer=tf.constant_initializer(0.0), 		regularizer=self.regularizer)
-
 						w_out  = tf.get_variable('w_out',  [in_dim, gcn_dim], 	initializer=tf.contrib.layers.xavier_initializer(), 	regularizer=self.regularizer)
 						b_out  = tf.get_variable('b_out',  [1, gcn_dim],  	initializer=tf.constant_initializer(0.0), 		regularizer=self.regularizer)
-
 						w_loop = tf.get_variable('w_loop', [in_dim, gcn_dim], 	initializer=tf.contrib.layers.xavier_initializer(), 	regularizer=self.regularizer)
 
 						if self.p.wGate:
 							w_gin  = tf.get_variable('w_gin',  [in_dim, 1], 	initializer=tf.contrib.layers.xavier_initializer(), 	regularizer=self.regularizer)
 							b_gin  = tf.get_variable('b_gin',  [1], 	  	initializer=tf.constant_initializer(0.0), 		regularizer=self.regularizer)
-
 							w_gout = tf.get_variable('w_gout', [in_dim, 1], 	initializer=tf.contrib.layers.xavier_initializer(), 	regularizer=self.regularizer)
 							b_gout = tf.get_variable('b_gout', [1], 	  	initializer=tf.constant_initializer(0.0), 		regularizer=self.regularizer)
-
 							w_gloop = tf.get_variable('w_gloop',[in_dim, 1], 	initializer=tf.contrib.layers.xavier_initializer(), 	regularizer=self.regularizer)
 
 					with tf.name_scope('in_arcs-%s_name-%s_layer-%d' % (lbl, name, layer)):
+						adj_mat = adj[i][lbl]
 						inp_in  = tf.tensordot(gcn_in, w_in, axes=[2,0]) + tf.expand_dims(b_in, axis=0)
-						in_t    = tf.stack([tf.sparse_tensor_dense_matmul(adj_in[i][lbl], inp_in[i]) for i in range(batch_size)])
+						in_t    = tf.stack([tf.sparse_tensor_dense_matmul(adj_mat, inp_in[i]) for i in range(batch_size)])
 						if self.p.dropout != 1.0: in_t    = tf.nn.dropout(in_t, keep_prob=self.p.dropout)
 
 						if self.p.wGate:
 							inp_gin = tf.tensordot(gcn_in, w_gin, axes=[2,0]) + tf.expand_dims(b_gin, axis=0)
-							in_gate = tf.stack([tf.sparse_tensor_dense_matmul(adj_in[i][lbl], inp_gin[i]) for i in range(batch_size)])
+							in_gate = tf.stack([tf.sparse_tensor_dense_matmul(adj_mat, inp_gin[i]) for i in range(batch_size)])
 							in_gsig = tf.sigmoid(in_gate)
 							in_act   = in_t * in_gsig
 						else:
 							in_act   = in_t
 
 					with tf.name_scope('out_arcs-%s_name-%s_layer-%d' % (lbl, name, layer)):
+						adj_mat  = tf.sparse.transpose(adj[i][lbl])
 						inp_out  = tf.tensordot(gcn_in, w_out, axes=[2,0]) + tf.expand_dims(b_out, axis=0)
-						out_t    = tf.stack([tf.sparse_tensor_dense_matmul(adj_out[i][lbl], inp_out[i]) for i in range(batch_size)])
+						out_t    = tf.stack([tf.sparse_tensor_dense_matmul(adj_mat, inp_out[i]) for i in range(batch_size)])
 						if self.p.dropout != 1.0: out_t    = tf.nn.dropout(out_t, keep_prob=self.p.dropout)
 
 						if self.p.wGate:
 							inp_gout = tf.tensordot(gcn_in, w_gout, axes=[2,0]) + tf.expand_dims(b_gout, axis=0)
-							out_gate = tf.stack([tf.sparse_tensor_dense_matmul(adj_out[i][lbl], inp_gout[i]) for i in range(batch_size)])
+							out_gate = tf.stack([tf.sparse_tensor_dense_matmul(adj_mat, inp_gout[i]) for i in range(batch_size)])
 							out_gsig = tf.sigmoid(out_gate)
 							out_act  = out_t * out_gsig
 						else:
@@ -379,8 +351,7 @@ class DCT_NN(Model):
 		
 		de_out = self.GCNLayer( gcn_in 		= de_in, 		in_dim 	    = de_in_dim, 		gcn_dim    = self.p.de_gcn_dim, 
 					batch_size 	= self.p.batch_size, 	max_nodes   = self.seq_len, 		max_labels = self.num_deLabel, 
-					adj_in 	= self.de_adj_mat_in, 		adj_out     = self.de_adj_mat_out, 
-					num_layers 	= self.p.de_layers, 	name 	   = "GCN_DE")
+					adj 		= self.de_adj_mat, 	num_layers  = self.p.de_layers, 	name 	   = "GCN_DE")
 
 		ce_in_dim = self.p.de_gcn_dim
 		ce_in 	  = de_out[-1]			# GCNLayer returns list containing output of all layers; last entry is its final output
@@ -394,8 +365,7 @@ class DCT_NN(Model):
 		et_con = tf.concat( [dct_init, et_vecs], axis=1)
 		ce_out = self.GCNLayer( gcn_in 		= et_con, 		in_dim 		= ce_in_dim, 			gcn_dim    = self.p.et_gcn_dim, 
 					batch_size 	= self.p.batch_size, 	max_nodes 	= self.max_et+1, 		max_labels = self.num_etLabel,
-					adj_in 		= self.et_adj_mat_in, 	adj_out     	= self.et_adj_mat_out,
-					num_layers	= self.p.et_layers, 	name 		= "GCN_CE")									
+					adj 		= self.et_adj_mat, 	num_layers	= self.p.et_layers, 		name 	   = "GCN_CE")
 
 		dct_vec = ce_out[-1][:,0]
 
