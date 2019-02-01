@@ -270,28 +270,26 @@ class DCT_NN(object):
 							w_gloop = tf.get_variable('w_gloop',[in_dim, 1], 	initializer=tf.contrib.layers.xavier_initializer(), 	regularizer=self.regularizer)
 
 					with tf.name_scope('in_arcs-%s_name-%s_layer-%d' % (lbl, name, layer)):
-						adj_mat = adj[i][lbl]
 						inp_in  = tf.tensordot(gcn_in, w_in, axes=[2,0]) + tf.expand_dims(b_in, axis=0)
-						in_t    = tf.stack([tf.sparse_tensor_dense_matmul(adj_mat, inp_in[i]) for i in range(batch_size)])
+						in_t    = tf.stack([tf.sparse_tensor_dense_matmul(adj[i][lbl], inp_in[i]) for i in range(batch_size)])
 						if self.p.dropout != 1.0: in_t    = tf.nn.dropout(in_t, keep_prob=self.p.dropout)
 
 						if self.p.wGate:
 							inp_gin = tf.tensordot(gcn_in, w_gin, axes=[2,0]) + tf.expand_dims(b_gin, axis=0)
-							in_gate = tf.stack([tf.sparse_tensor_dense_matmul(adj_mat, inp_gin[i]) for i in range(batch_size)])
+							in_gate = tf.stack([tf.sparse_tensor_dense_matmul(adj[i][lbl], inp_gin[i]) for i in range(batch_size)])
 							in_gsig = tf.sigmoid(in_gate)
 							in_act   = in_t * in_gsig
 						else:
 							in_act   = in_t
 
 					with tf.name_scope('out_arcs-%s_name-%s_layer-%d' % (lbl, name, layer)):
-						adj_mat  = tf.sparse.transpose(adj[i][lbl])
 						inp_out  = tf.tensordot(gcn_in, w_out, axes=[2,0]) + tf.expand_dims(b_out, axis=0)
-						out_t    = tf.stack([tf.sparse_tensor_dense_matmul(adj_mat, inp_out[i]) for i in range(batch_size)])
+						out_t    = tf.stack([tf.sparse_tensor_dense_matmul(tf.sparse_transpose(adj[i][lbl]), inp_out[i]) for i in range(batch_size)])
 						if self.p.dropout != 1.0: out_t    = tf.nn.dropout(out_t, keep_prob=self.p.dropout)
 
 						if self.p.wGate:
 							inp_gout = tf.tensordot(gcn_in, w_gout, axes=[2,0]) + tf.expand_dims(b_gout, axis=0)
-							out_gate = tf.stack([tf.sparse_tensor_dense_matmul(adj_mat, inp_gout[i]) for i in range(batch_size)])
+							out_gate = tf.stack([tf.sparse_tensor_dense_matmul(tf.sparse_transpose(adj[i][lbl]), inp_gout[i]) for i in range(batch_size)])
 							out_gsig = tf.sigmoid(out_gate)
 							out_act  = out_t * out_gsig
 						else:
