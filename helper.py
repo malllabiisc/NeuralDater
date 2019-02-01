@@ -1,10 +1,12 @@
 import numpy as np, sys, unicodedata, requests, os, random, pdb, requests, json, gensim
 import matplotlib.pyplot as plt, uuid, time, argparse, pickle, operator
+import logging, logging.config, itertools, pathlib
+import scipy.sparse as sp
+
+from collections import defaultdict as ddict
 from random import randint
 from pprint import pprint
-import logging, logging.config, itertools, pathlib
 from sklearn.metrics import precision_recall_fscore_support
-import scipy.sparse as sp
 
 np.set_printoptions(precision=4)
 

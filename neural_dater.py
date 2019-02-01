@@ -170,9 +170,9 @@ class DCT_NN(object):
 		self.et_mask 		= tf.placeholder(tf.float32, shape=[None, None],   name='et_mask')
 
 		# Array of batch_size number of dictionaries, where each dictionary is mapping of label to sparse_placeholder [Temporal graph]
-		self.de_adj_mat	= [{lbl: tf.sparse_placeholder(tf.float32,  shape=[None, None],  name='de_adj_mat_{}'.  format(lbl))} for lbl in range(self.num_deLabel) for _ in range(self.p.batch_size)]
+		self.de_adj_mat	= [{lbl: tf.sparse_placeholder(tf.float32,  shape=[None, None]) for lbl in range(self.num_deLabel)}  for _ in range(self.p.batch_size)]
 		# Array of batch_size number of dictionaries, where each dictionary is mapping of label to sparse_placeholder [Syntactic graph]
-		self.et_adj_mat	= [{lbl: tf.sparse_placeholder(tf.float32,  shape=[None, None],  name='et_adj_mat_{}'.  format(lbl))} for lbl in range(self.num_etLabel) for _ in range(self.p.batch_size)]
+		self.et_adj_mat	= [{lbl: tf.sparse_placeholder(tf.float32,  shape=[None, None]) for lbl in range(self.num_etLabel)}  for _ in range(self.p.batch_size)]
 
 		self.seq_len 		= tf.placeholder(tf.int32, shape=(), name='seq_len')				# Maximum number of words in documents of a batch
 		self.max_et 		= tf.placeholder(tf.int32, shape=(), name='max_et')				# Maximum number of events/time_expressions in documents of a batch
