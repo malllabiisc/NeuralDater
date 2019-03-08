@@ -5,12 +5,24 @@ import tensorflow as tf
 Abbreviations used in variable names:
 	et: event-time
 	de: dependency parse
+Recommendation: View with tab-size 8
 """
 
 class DCT_NN(object):
 
-	# Pads the data in a batch
 	def padData(self, data, seq_len):
+		"""
+		Pads the data in a batch | Used as a helper function by pad_dynamic
+
+		Parameters
+		----------
+		data:		batch to be padded
+		seq_len:	maximum number of words in the batch
+
+		Returns
+		-------
+		Padded data and mask
+		"""
 		temp = np.zeros((len(data), seq_len), np.int32)
 		mask = np.zeros((len(data), seq_len), np.float32)
 		
@@ -20,14 +32,37 @@ class DCT_NN(object):
 
 		return temp, mask
 
-	# Generates the one-hot representation
 	def getOneHot(self, data, num_class):
+		"""
+		Generates the one-hot representation
+
+		Parameters
+		----------
+		data:		Batch to be padded
+		num_class:	Total number of relations 
+
+		Returns
+		-------
+		One-hot representation of batch
+		"""
 		temp = np.zeros((len(data), num_class), np.int32)
 		for i, ele in enumerate(data):
 			temp[i, ele] = 1
 		return temp
 
 	def getBatches(self, data, shuffle = True):
+		"""
+	        Generates batches of multiple bags
+
+	        Parameters
+	        ----------
+	        data:		Data to be used for creating batches.
+	        shuffle:	Decides whether to shuffle the data or not.
+	        
+	        Returns
+	        -------
+	        Generator for creating batches. 
+	        """
 		if shuffle: random.shuffle(data)
 		num_batches = len(data) // self.p.batch_size
 
@@ -35,8 +70,19 @@ class DCT_NN(object):
 			start_idx = i * self.p.batch_size
 			yield data[start_idx : start_idx + self.p.batch_size]
 
-	# Merges edge labels or Ignores Edge labels based on cmd arguments
 	def updateEdges(self, data, merge_edges=False):
+		"""
+	        Merges edge labels or Ignores Edge labels based on cmd arguments
+
+	        Parameters
+	        ----------
+	        data:		full dataset
+	        merge_edges:	Whether to merge Event Time graph edge labels or not
+	        
+	        Returns
+	        -------
+	        data:		Updated dataset
+	        """
 
 		for dtype in ['train', 'test', 'valid']:
 			for i, edges in enumerate(data[dtype]['ETEdges']):
@@ -63,8 +109,18 @@ class DCT_NN(object):
 		if merge_edges: self.num_etLabel -= 2
 		return data
 	
-	# Remove documents with very large number of edges in Event-Time Graph
 	def rm_hdeg_docs(self, data):
+		"""
+	        Remove documents with very large number of edges in Event-Time Graph
+
+	        Parameters
+	        ----------
+	        data:		full dataset
+	        
+	        Returns
+	        -------
+	        data:		Updated dataset
+	        """
 		rm_idx = {}
 		for dtype in ['train', 'test', 'valid']:
 			rm_idx[dtype] = set()
@@ -83,8 +139,27 @@ class DCT_NN(object):
 					
 		return rm_idx
 
-	# Loads the data and arranges data for feeding to TensorFlow
 	def load_data(self):
+		"""
+		Reads the data from pickle file
+
+		Parameters
+		----------
+		self.p.dataset: The path of the dataset to be loaded
+
+		Returns
+		-------
+		self.voc2id:		Mapping of word to its unique identifier
+		self.Id2voc:		Inverse of self.voc2id
+		self.e2id:		Mapping of event time graph edge label to its unique identifier
+		self.n_et2id:		New Mapping of event time graph edge label to its unique identifier
+		self.num_etLabel:	Number of edge labels in event-time graph
+		self.de2id:		Mapping of dependency graph edge label to its unique identifier
+		self.num_deLabel:	Number of edge labels in dependency graph
+		self.num_class:		Total number of years to be predicted
+		self.wrd_list:		Words in vocabulary
+		self.data:		Contains all split of the data train/valid/test
+		"""
 		data = pickle.load(open(self.p.dataset, 'rb'))
 
 		self.voc2id 	= data['voc2id']
@@ -142,8 +217,21 @@ class DCT_NN(object):
 		
 		self.data = data
 
-	# Loads adjacency matrix in sparse matrix format, required for feeding to Tensorflow
 	def get_adj(self, edgeList, batch_size, max_nodes, max_labels):
+		"""
+		Loads adjacency matrix in sparse matrix format, required for feeding to Tensorflow
+
+		Parameters
+		----------
+		edgeList:	List of list of edges 
+		batch_size:	Number of bags in a batch
+		max_nodes:	Maximum number of nodes in the graph
+		max_labels:	Maximum number of edge labels in the graph 
+
+		Returns
+		-------
+		adj_mat		Contains dependency/event-time graph for each sentence in the batch
+		"""
 		adj_main = []
 		for edges in edgeList:
 			ind, vals, adj   = ddict(list), ddict(list), {}
@@ -162,6 +250,10 @@ class DCT_NN(object):
 
 
 	def add_placeholders(self):
+		"""
+		Defines the placeholder required for the model
+		"""
+
 		self.input_x  		= tf.placeholder(tf.int32,   shape=[None, None],   name='input_data')		# Words in a document (batch_size x max_words)
 		self.input_y 		= tf.placeholder(tf.int32,   shape=[None, None],   name='input_labels')		# Actual document creation year of the document
 
@@ -171,6 +263,7 @@ class DCT_NN(object):
 
 		# Array of batch_size number of dictionaries, where each dictionary is mapping of label to sparse_placeholder [Temporal graph]
 		self.de_adj_mat	= [{lbl: tf.sparse_placeholder(tf.float32,  shape=[None, None]) for lbl in range(self.num_deLabel)}  for _ in range(self.p.batch_size)]
+
 		# Array of batch_size number of dictionaries, where each dictionary is mapping of label to sparse_placeholder [Syntactic graph]
 		self.et_adj_mat	= [{lbl: tf.sparse_placeholder(tf.float32,  shape=[None, None]) for lbl in range(self.num_etLabel)}  for _ in range(self.p.batch_size)]
 
@@ -181,6 +274,23 @@ class DCT_NN(object):
 		self.rec_dropout 	= tf.placeholder_with_default(self.p.rec_dropout, shape=(), name='rec_dropout')	# Dropout used in Bi-LSTM
 
 	def pad_dynamic(self, X, et_idx):
+		"""
+		Pads each batch during runtime.
+
+		Parameters
+		----------
+		X:		For each sentence in the batch, list of words
+		et_idx:		Indices of event-time tokens in the sentence
+
+		Returns
+		-------
+		x_pad		Padded words 
+		x_len		Number of words in each sentence
+		et_pad 		padded  event-time token indices
+		et_mask 	Mask for et_pad
+		seq_len 	Maximum sentence length in the batch
+		max_et  	maximum number of event-time tokens in the batch
+		"""
 		seq_len, max_et = 0, 0
 
 		x_len = np.zeros((len(X)), np.int32)
@@ -197,6 +307,19 @@ class DCT_NN(object):
 		return x_pad, x_len, et_pad, et_mask, seq_len, max_et
 
 	def create_feed_dict(self, batch, wLabels=True, dtype='train'):
+		"""
+		Creates a feed dictionary for the batch
+
+		Parameters
+		----------
+		batch:		contains a batch of bags
+		wLabels:	Whether batch contains labels or not
+		split:		Indicates the split of the data - train/valid/test
+
+		Returns
+		-------
+		feed_dict	Feed dictionary to be fed during sess.run
+		"""
 		X, Y, et_idx, ETEdges, DepEdges = zip(*batch)
 
 		x_pad, x_len, et_pad, et_mask, seq_len, max_et = self.pad_dynamic(X, et_idx)
@@ -231,16 +354,27 @@ class DCT_NN(object):
 
 		return feed_dict
 
-	# GCN Layer Implementation 
-	def GCNLayer(self, gcn_in, 		# Input to GCN Layer
-			   in_dim, 		# Dimension of input to GCN Layer 
-			   gcn_dim, 		# Hidden state dimension of GCN
-			   batch_size, 		# Batch size
-			   max_nodes, 		# Maximum number of nodes in graph
-			   max_labels, 		# Maximum number of edge labels
-			   adj, 		# Adjacency matrix for in edges
-			   num_layers=1,	# Number of GCN Layers
-			   name="GCN"):
+	def GCNLayer(self, gcn_in, in_dim, gcn_dim, batch_size, max_nodes, max_labels, adj, num_layers=1, name="GCN"):
+		"""
+		GCN Layer Implementation
+
+		Parameters
+		----------
+		gcn_in:		Input to GCN Layer
+		in_dim:		Dimension of input to GCN Layer 
+		gcn_dim:	Hidden state dimension of GCN
+		batch_size:	Batch size
+		max_nodes:	Maximum number of nodes in graph
+		max_labels:	Maximum number of edge labels
+		adj:		Adjacency matrix indices
+		num_layers:	Number of GCN Layers
+		name 		Name of the layer (used for creating variables, keep it different for different layers)
+
+		Returns
+		-------
+		out		List of output of different GCN layers with first element as input itself, i.e., [gcn_in, gcn_layer1_out, gcn_layer2_out ...]
+		"""
+
 		out = []
 		out.append(gcn_in)
 
@@ -313,21 +447,43 @@ class DCT_NN(object):
 
 		return out
 
-	# Lookup equivalent for tensors with dim > 2 
 	def gather(self, data, pl_idx, pl_mask, max_len, name=None):
-		with tf.name_scope(name):
-			idx1  = tf.range(self.p.batch_size, dtype=tf.int32)
-			idx1  = tf.reshape(idx1, [-1, 1])
-			idx1_ = tf.reshape(tf.tile(idx1, [1, max_len]) , [-1, 1])
-			idx_reshape = tf.reshape(pl_idx, [-1, 1])
-			indices = tf.concat((idx1_, idx_reshape), axis=1)
-			et_vecs = tf.gather_nd(data, indices)
-			et_vecs = tf.reshape(et_vecs, [self.p.batch_size, self.max_et, -1])
-			mask_vec = tf.expand_dims(pl_mask, axis=2)
-			return et_vecs * mask_vec
+		"""
+		Lookup equivalent for tensors with dim > 2 (Can be simplified using tf.batch_gather)
 
-	# Creates the compuational graph
+		Parameters
+		----------
+		data:		Tensor in which lookup has to be performed
+		pl_idx:		The indices to be taken
+		pl_mask:	For handling padding in pl_idx
+		max_len:	Maximum length of indices
+
+		Returns
+		-------
+		et_vecs * mask_vec:	Extracted vectors at given indices
+		
+		"""
+		idx1  = tf.range(self.p.batch_size, dtype=tf.int32)
+		idx1  = tf.reshape(idx1, [-1, 1])
+		idx1_ = tf.reshape(tf.tile(idx1, [1, max_len]) , [-1, 1])
+		idx_reshape = tf.reshape(pl_idx, [-1, 1])
+		indices = tf.concat((idx1_, idx_reshape), axis=1)
+		et_vecs = tf.gather_nd(data, indices)
+		et_vecs = tf.reshape(et_vecs, [self.p.batch_size, self.max_et, -1])
+		mask_vec = tf.expand_dims(pl_mask, axis=2)
+		return et_vecs * mask_vec
+
 	def add_model(self):
+		"""
+		Creates the Computational Graph
+
+		Parameters
+		----------
+
+		Returns
+		-------
+		nn_out:		Logits for each bag in the batch
+		"""
 		nn_in = self.input_x
 
 		with tf.variable_scope('Embeddings') as scope:
@@ -383,18 +539,51 @@ class DCT_NN(object):
 
 
 	def add_loss(self, nn_out):
+		"""
+		Computes loss based on logits and actual labels
+
+		Parameters
+		----------
+		nn_out:		Logits for each bag in the batch
+
+		Returns
+		-------
+		loss:		Computes loss based on prediction and actual labels 
+		"""
+
 		with tf.name_scope('Loss_op'):
 			loss  = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=nn_out, labels=self.input_y))
 			if self.regularizer != None: loss += tf.contrib.layers.apply_regularization(self.regularizer, tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES))
 		return loss
 
 	def add_optimizer(self, loss):
+		"""
+		Add optimizer for training variables
+
+		Parameters
+		----------
+		loss:		Computed loss
+
+		Returns
+		-------
+		train_op:	Training optimizer
+		"""
 		with tf.name_scope('Optimizer'):
 			optimizer = tf.train.AdamOptimizer(self.p.lr)
 			train_op  = optimizer.minimize(loss)
 		return train_op
 
 	def __init__(self, params):
+		"""
+		Constructor for the main function. Loads data and creates computation graph. 
+
+		Parameters
+		----------
+		params:		Hyperparameters of the model
+
+		Returns
+		-------
+		"""
 		self.p  = params
 		pprint(vars(params))
 		self.logger = get_logger(self.p.name, self.p.log_dir, self.p.config_dir)
@@ -422,7 +611,26 @@ class DCT_NN(object):
 		self.summ_writer = None
 
 	def predict(self, sess, data, wLabels=True, shuffle=False):
-		losses, results, y_pred, y, logit_list = [], [], [], [], []
+		"""
+		Evaluate model on valid/test data
+
+		Parameters
+		----------
+		sess:		Session of tensorflow
+		data:		Data to evaluate on
+		wLabels:	Does data include labels or not
+		shuffle:	Shuffle data while before creates batches
+
+		Returns
+		-------
+		losses:		Loss over the entire data
+		accuracies:	Overall Accuracy
+		y: 		Actual label
+		y_pred:		Predicted labels
+		logit_list:	Logit list for each bag in the data
+
+		"""
+		losses, y_pred, y, logit_list = [], [], [], [], []
 		total_correct, total_cnt = 0, 0
 
 		for step, batch in enumerate(self.getBatches(data, shuffle)):
@@ -443,7 +651,6 @@ class DCT_NN(object):
 			y_pred   += pred_ind.tolist()
 			_, Y, _, _, _ = zip(*batch)
 			y += np.array(Y).argmax(axis=1).tolist()
-			results.append(pred_ind)
 
 			if step % 5 == 0:
 				self.logger.info('Evaluating Test/Valid ({}/{}):\t{:.5}\t{:.5}\t{}'.format(step, len(data)//self.p.batch_size, total_correct/total_cnt, np.mean(losses), self.p.name))
@@ -451,10 +658,25 @@ class DCT_NN(object):
 		accuracy = float(total_correct)/total_cnt * 100.0
 		self.logger.info('Accuracy: {}'.format(accuracy))
 
-		if wLabels: 	return np.mean(losses), results, accuracy, y, y_pred, logit_list
-		else: 		return 0, results, accuracy, y, y_pred, logit_list
+		if wLabels: 	return np.mean(losses), accuracy, y, y_pred, logit_list
+		else: 		return 0, accuracy, y, y_pred, logit_list
 
 	def run_epoch(self, sess, data, epoch, shuffle=True):
+		"""
+		Runs one epoch of training
+
+		Parameters
+		----------
+		sess:		Session of tensorflow
+		data:		Data to train on
+		epoch:		Epoch number
+		shuffle:	Shuffle data while before creates batches
+
+		Returns
+		-------
+		losses:		Loss over the entire data
+		Accuracy:	Overall accuracy
+		"""
 		drop_rate = self.p.dropout
 
 		losses = []
@@ -480,6 +702,16 @@ class DCT_NN(object):
 		return np.mean(losses), accuracy
 
 	def fit(self, sess):
+		"""
+		Trains the model and finally evaluates on test
+
+		Parameters
+		----------
+		sess:		Tensorflow session object
+
+		Returns
+		-------
+		"""
 		self.summ_writer = tf.summary.FileWriter("tf_board/DCT_NN/" + self.p.name, sess.graph)
 		self.best_val_acc, self.best_train_acc = 0.0, 0.0
 		
@@ -493,8 +725,8 @@ class DCT_NN(object):
 		for epoch in range(self.p.max_epochs):
 			self.logger.info('Epoch: {}'.format(epoch))
 
-			train_loss, train_acc 					   = self.run_epoch(sess,  self.data_list['train'], epoch)
-			val_loss, val_pred, val_acc, y, y_pred, logit_list = self.predict(sess,	self.data_list['valid'])
+			train_loss, train_acc 			 = self.run_epoch(sess,  self.data_list['train'], epoch)
+			val_loss, val_acc, y, y_pred, logit_list = self.predict(sess,	self.data_list['valid'])
 
 			if val_acc > self.best_val_acc:
 				self.best_val_acc   = val_acc
