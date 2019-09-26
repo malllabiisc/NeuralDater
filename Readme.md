@@ -1,5 +1,11 @@
 ## Dating Documents using Graph Convolution Networks
 
+[![Conference](http://img.shields.io/badge/ACL-2018-4b44ce.svg)](https://www.aclweb.org/anthology/P18-1149/)
+[![Paper](http://img.shields.io/badge/paper-arxiv.1902.00175-B31B1B.svg)](https://arxiv.org/abs/1902.00175)
+[![Slides](http://img.shields.io/badge/slides-pdf-green.svg)](https://shikhar-vashishth.github.io/assets/pdf/slides_neuraldater.pdf)
+[![Poster](http://img.shields.io/badge/poster-pdf-blue.svg)](https://shikhar-vashishth.github.io/assets/pdf/neuraldater_poster.pdf)
+
+
 Source code and dataset for [ACL 2018](http://acl2018.org) paper: [Document Dating using Graph Convolution Networks](http://malllabiisc.github.io/publications/papers/neuraldater_acl18.pdf).
 
 ![](https://raw.githubusercontent.com/malllabiisc/NeuralDater/master/overview.png)
