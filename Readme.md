@@ -117,7 +117,7 @@ For getting temporal graph of new documents. The following steps need to be foll
 ### Citing:
 Please cite the following paper if you use this code in your work.
 
-```tex
+```bibtex
 @InProceedings{neuraldater2018,
   author = "Vashishth, Shikhar and Dasgupta, Shib Sankar and Ray, Swayambhu Nath and Talukdar, Partha",
   title = "Dating Documents using Graph Convolution Networks",
