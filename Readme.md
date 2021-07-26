@@ -68,7 +68,7 @@ For getting temporal graph of new documents. The following steps need to be foll
   - Above command generates an `.xml` file. This is used by CATENA for extracting temporal graph and it also contains the dependency parse information of the document which can be extracted using the following command:
 
     ```shell
-    python preprocess/read_caveo_out.py <caevo_out_path> <destination_path>
+    python preprocess/read_caevo_out.py <caevo_out_path> <destination_path>
     ```
 
 - For making the generated `.xml` file compatible for input to CATENA, use the following script as
