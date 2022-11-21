@@ -7,4 +7,4 @@ numpy==1.14.3
 asposebarcode==1.0.0
 networkx==2.1
 scikit_learn==0.19.1
-tensorflow==1.8.0
+tensorflow==2.9.3
